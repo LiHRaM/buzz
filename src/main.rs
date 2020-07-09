@@ -84,15 +84,15 @@ fn main() {
             if unseen.iter().sum::<usize>() == 0 {
                 Msg {
                     text: "".into(),
-                    tooltip: "You have reached inbox 0!".into(),
-                    class: "mail-read".into(),
+                    tooltip: "You have reached inbox 0!",
+                    class: "mail-read",
                     percentage,
                 }
             } else {
                 Msg {
                     text: "".into(),
-                    tooltip: "You have unread mail!".into(),
-                    class: "mail-unread".into(),
+                    tooltip: "You have unread mail!",
+                    class: "mail-unread",
                     percentage,
                 }
             }
@@ -100,8 +100,8 @@ fn main() {
 
         let msg = serde_json::to_string(&msg).unwrap();
 
-        guard.write(msg.as_bytes()).unwrap();
-        guard.write(b"\n").unwrap();
+        guard.write_all(msg.as_bytes()).unwrap();
+        guard.write_all(b"\n").unwrap();
         guard.flush().unwrap();
     }
 }

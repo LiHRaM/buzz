@@ -49,7 +49,7 @@ impl Account {
         let mut args = self.password_command.split(' ');
         let cmd = args.next().expect("Invalid password command, it's empty!");
         let mut cmd = std::process::Command::new(cmd);
-        while let Some(arg) = args.next() {
+        for arg in args {
             cmd.arg(arg);
         }
         let output = &cmd.output().expect("Password command failed").stdout;
