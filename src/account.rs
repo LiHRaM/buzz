@@ -1,6 +1,6 @@
 use native_tls::{TlsConnector, TlsStream};
 
-use notify_rust::{Hint, Notification};
+use notify_rust::Notification;
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
