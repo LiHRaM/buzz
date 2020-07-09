@@ -212,7 +212,6 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                             askama_escape::escape(body, askama_escape::Html)
                         ))
                         .icon("notification-message-email")
-                        .hint(Hint::Category("email.arrived".to_owned()))
                         .id(42); // for some reason, just updating isn't enough for dunst
                     n.show().unwrap();
                     notification = Some(n);
