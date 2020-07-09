@@ -1,5 +1,6 @@
 use native_tls::{TlsConnector, TlsStream};
 
+use notify_rust::{Hint, Notification};
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -104,7 +105,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
     ) -> Result<(), imap::error::Error> {
         // Keep track of all the e-mails we have already notified about
         let mut last_notified = 0;
-        let mut notification = None::<notify_rust::NotificationHandle>;
+        let mut notification = None::<Notification>;
 
         loop {
             // check current state of inbox
@@ -180,7 +181,6 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                     }
                 }
 
-                use notify_rust::{Hint, Notification};
                 let title = format!(
                     "@{} has new mail ({} unseen)",
                     self.account.name, num_unseen
@@ -195,26 +195,27 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                 }
                 let body = body.trim_end();
 
-                if let Some(mut n) = notification.take() {
-                    n.summary(&title).body(&format!(
+                if let Some(n) = notification.take() {
+                    let mut copy = Notification::new();
+                    copy.clone_from(&n);
+                    copy.summary(&title).body(&format!(
                         "{}",
                         askama_escape::escape(body, askama_escape::Html)
                     ));
-                    n.update();
+                    copy.show().unwrap();
+                    notification = Some(copy);
                 } else {
-                    notification = Some(
-                        Notification::new()
-                            .summary(&title)
-                            .body(&format!(
-                                "{}",
-                                askama_escape::escape(body, askama_escape::Html)
-                            ))
-                            .icon("notification-message-email")
-                            .hint(Hint::Category("email.arrived".to_owned()))
-                            .id(42) // for some reason, just updating isn't enough for dunst
-                            .show()
-                            .expect("failed to launch notify-send"),
-                    );
+                    let mut n = Notification::new();
+                    n.summary(&title)
+                        .body(&format!(
+                            "{}",
+                            askama_escape::escape(body, askama_escape::Html)
+                        ))
+                        .icon("notification-message-email")
+                        .hint(Hint::Category("email.arrived".to_owned()))
+                        .id(42); // for some reason, just updating isn't enough for dunst
+                    n.show().unwrap();
+                    notification = Some(n);
                 }
             }
 
