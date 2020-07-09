@@ -1,5 +1,6 @@
 use native_tls::{TlsConnector, TlsStream};
 
+use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::io::prelude::*;
@@ -9,21 +10,22 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Account {
     pub name: String,
-    pub server: (String, u16),
+    pub address: String,
+    pub port: u16,
     pub username: String,
-    pub password: String,
+    pub password_command: String,
     pub notification_command: Option<String>,
 }
 
 impl Account {
     pub fn connect(&self) -> Result<Connection<TlsStream<TcpStream>>, imap::error::Error> {
         let tls = TlsConnector::builder().build()?;
-        imap::connect((&*self.server.0, self.server.1), &self.server.0, &tls).and_then(|c| {
+        imap::connect((&*self.address, self.port), &self.address, &tls).and_then(|c| {
             let mut c = c
-                .login(self.username.trim(), self.password.trim())
+                .login(self.username.trim(), self.get_password().trim())
                 .map_err(|(e, _)| e)?;
             let cap = c.capabilities()?;
             if !cap.has_str("IDLE") {
@@ -40,6 +42,19 @@ impl Account {
                 socket: c,
             })
         })
+    }
+
+    fn get_password(&self) -> String {
+        let mut args = self.password_command.split(' ');
+        let cmd = args.next().expect("Invalid password command, it's empty!");
+        let mut cmd = std::process::Command::new(cmd);
+        while let Some(arg) = args.next() {
+            cmd.arg(arg);
+        }
+        let output = &cmd.output().expect("Password command failed").stdout;
+        std::str::from_utf8(output)
+            .expect("Command output is invalid UTF-8")
+            .into()
     }
 }
 
