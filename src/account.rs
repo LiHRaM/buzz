@@ -84,7 +84,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
             );
             match self.account.connect() {
                 Ok(c) => {
-                    println!("{} connection reestablished", self.account.name);
+                    eprintln!("{} connection reestablished", self.account.name);
                     return c.handle(account, tx);
                 }
                 Err(e) => {
@@ -142,7 +142,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                                 Some(date) => match chrono::DateTime::parse_from_rfc2822(&date) {
                                     Ok(date) => date.with_timezone(&chrono::Local),
                                     Err(e) => {
-                                        println!("failed to parse message date: {:?}", e);
+                                        eprintln!("failed to parse message date: {:?}", e);
                                         chrono::Local::now()
                                     }
                                 },
@@ -151,7 +151,7 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
 
                             subjects.insert(date, subject);
                         }
-                        Err(e) => println!("failed to parse headers of message: {:?}", e),
+                        Err(e) => eprintln!("failed to parse headers of message: {:?}", e),
                     }
                 }
             }
@@ -195,8 +195,6 @@ impl<T: Read + Write + imap::extensions::idle::SetReadTimeout> Connection<T> {
                 }
                 let body = body.trim_end();
 
-                println!("! {}", title);
-                println!("{}", body);
                 if let Some(mut n) = notification.take() {
                     n.summary(&title).body(&format!(
                         "{}",

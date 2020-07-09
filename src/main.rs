@@ -2,12 +2,15 @@
 
 use directories_next::ProjectDirs;
 use rayon::prelude::*;
+use std::io::Write;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
 mod account;
+mod waybar;
 use account::Account;
+use waybar::Msg;
 
 fn main() {
     // Load the user's config
@@ -17,8 +20,6 @@ fn main() {
         .with_file_name("buzz.dhall");
 
     let accounts: Vec<Account> = serde_dhall::from_file(config).parse().unwrap();
-
-    println!("{:#?}", accounts);
 
     if accounts.is_empty() {
         println!("No accounts in config; exiting...");
@@ -67,6 +68,8 @@ fn main() {
         });
     }
 
+    let out = std::io::stdout();
+    let mut guard = out.lock();
     for r in rx {
         let (i, num_unseen) = if let Some(r) = r {
             r
@@ -74,10 +77,31 @@ fn main() {
             break;
         };
         unseen[i] = num_unseen;
-        if unseen.iter().sum::<usize>() == 0 {
-            // TODO: No new
-        } else {
-            // TODO: New
-        }
+
+        let msg = {
+            let percentage = 0.0;
+
+            if unseen.iter().sum::<usize>() == 0 {
+                Msg {
+                    text: "".into(),
+                    tooltip: "You have reached inbox 0!".into(),
+                    class: "mail-read".into(),
+                    percentage,
+                }
+            } else {
+                Msg {
+                    text: "".into(),
+                    tooltip: "You have unread mail!".into(),
+                    class: "mail-unread".into(),
+                    percentage,
+                }
+            }
+        };
+
+        let msg = serde_json::to_string(&msg).unwrap();
+
+        guard.write(msg.as_bytes()).unwrap();
+        guard.write(b"\n").unwrap();
+        guard.flush().unwrap();
     }
 }

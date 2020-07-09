@@ -170,6 +170,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_dhall",
+ "serde_json",
 ]
 
 [[package]]
